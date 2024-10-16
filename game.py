@@ -1,5 +1,9 @@
 import pygame
 from strategies.bfs import BFSStrategy
+from strategies.dfs import DFSStrategy
+from strategies.iddfs import IDDFSStrategy
+from strategies.astar import AStarStrategy
+from strategies.idastar import IDAStarStrategy
 
 class Game:
 
@@ -20,7 +24,7 @@ class Game:
         return self.level_data
     
     def autoplay(self):
-        bfs = BFSStrategy(self.level_data)
+        bfs = IDDFSStrategy(self.level_data)
         solucion = bfs.resolver()
         for movimiento in solucion:
             self.movePlayer(movimiento)

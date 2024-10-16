@@ -1,27 +1,31 @@
 from collections import deque
+import heapq
 from strategies.strategy import Strategy
 
 
-class BFSStrategy(Strategy):
+class AStarStrategy(Strategy):
     def __init__(self, mapa):
         # Estado inicial del juego: posiciones del jugador y cajas
         self.estado_inicial = super().mapa_a_estado(mapa)
-        # Cola para la búsqueda en amplitud, incluye el camino recorrido
-        self.queue = deque(
-            [(self.estado_inicial, "")]
-        )  # Empareja el estado con el camino inicial vacío
-        # Conjunto para mantener los estados visitados
-        self.visited = set()
-        # Agregar el estado inicial a los visitados
-        self.visited.add(
-            (self.estado_inicial["jugador"], frozenset(self.estado_inicial["cajas"]))
-        )
 
     def es_estado_objetivo(self, estado):
         """
         Verifica si el estado es objetivo, es decir, si todas las cajas están en los objetivos.
         """
         return estado["cajas"] == estado["objetivos"]
+
+    def heuristica(self, estado):
+        """
+        Calcula la heurística del estado (distancia de Manhattan de cada caja al objetivo más cercano).
+        """
+        total_distancia = 0
+        for caja in estado["cajas"]:
+            distancias = [
+                abs(caja[0] - obj[0]) + abs(caja[1] - obj[1])
+                for obj in estado["objetivos"]
+            ]
+            total_distancia += min(distancias)
+        return total_distancia
 
     def generar_movimientos(self, estado):
         """
@@ -77,29 +81,40 @@ class BFSStrategy(Strategy):
 
     def resolver(self):
         """
-        Ejecuta la búsqueda en amplitud para encontrar la solución.
+        Ejecuta la búsqueda A* para encontrar la solución.
         """
-        while self.queue:
-            estado_actual, camino = self.queue.popleft()
-
-            print(camino)  # Imprimir el camino recorrido
-
+        # Inicializar la cola de prioridad
+        heap = []
+        
+        # Estado inicial y su costo
+        g_cost = 0  # Costo inicial es 0
+        f_cost = g_cost + self.heuristica(self.estado_inicial)
+        
+        # Insertar el estado inicial en la cola de prioridad
+        # La tupla (f_cost, g_cost, camino, estado) evita comparar los diccionarios directamente
+        heapq.heappush(heap, (f_cost, g_cost, "", self.estado_inicial))  # (f, g, camino, estado)
+        
+        # Conjunto para rastrear estados visitados
+        visited = set()
+        visited.add((self.estado_inicial['jugador'], frozenset(self.estado_inicial['cajas'])))
+        
+        while heap:
+            # Extraer el estado con el menor f(n)
+            f_cost, g_cost, camino, estado_actual = heapq.heappop(heap)
+            
             # Verificar si hemos alcanzado el objetivo
             if self.es_estado_objetivo(estado_actual):
-                return camino  # Devuelve el camino en LURD si encontró una solución
-
+                return camino   # Devuelve el camino en LURD si encontró una solución
+            
             # Generar nuevos estados (movimientos válidos)
             for nuevo_estado, direccion in self.generar_movimientos(estado_actual):
-                estado_clave = (
-                    nuevo_estado["jugador"],
-                    frozenset(nuevo_estado["cajas"]),
-                )
-
+                estado_clave = (nuevo_estado['jugador'], frozenset(nuevo_estado['cajas']))
+                
                 # Si el estado no ha sido visitado, agrégalo a la cola y a los visitados
-                if estado_clave not in self.visited:
-                    self.visited.add(estado_clave)
-                    self.queue.append(
-                        (nuevo_estado, camino + direccion)
-                    )  # Añadir la dirección al camino
-
+                if estado_clave not in visited:
+                    visited.add(estado_clave)
+                    nuevo_g_cost = g_cost + 1  # Cada movimiento tiene un costo de 1
+                    nuevo_f_cost = nuevo_g_cost + self.heuristica(nuevo_estado)
+                    heapq.heappush(heap, (nuevo_f_cost, nuevo_g_cost, camino + direccion, nuevo_estado))
+                    
         return None  # Si no se encuentra solución, devuelve None

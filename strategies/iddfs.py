@@ -2,20 +2,10 @@ from collections import deque
 from strategies.strategy import Strategy
 
 
-class BFSStrategy(Strategy):
+class IDDFSStrategy(Strategy):
     def __init__(self, mapa):
         # Estado inicial del juego: posiciones del jugador y cajas
         self.estado_inicial = super().mapa_a_estado(mapa)
-        # Cola para la búsqueda en amplitud, incluye el camino recorrido
-        self.queue = deque(
-            [(self.estado_inicial, "")]
-        )  # Empareja el estado con el camino inicial vacío
-        # Conjunto para mantener los estados visitados
-        self.visited = set()
-        # Agregar el estado inicial a los visitados
-        self.visited.add(
-            (self.estado_inicial["jugador"], frozenset(self.estado_inicial["cajas"]))
-        )
 
     def es_estado_objetivo(self, estado):
         """
@@ -75,31 +65,53 @@ class BFSStrategy(Strategy):
 
         return movimientos
 
+    def profundidad_limitada(self, estado, camino, limite, visited):
+        """
+        Realiza búsqueda en profundidad hasta un límite de profundidad.
+        """
+        # Verifica si el estado actual es objetivo
+        if self.es_estado_objetivo(estado):
+            return camino
+
+        # Si el límite es cero, no profundizamos más
+        if limite <= 0:
+            return None
+
+        # Marca este estado como visitado
+        estado_clave = (estado["jugador"], frozenset(estado["cajas"]))
+        visited.add(estado_clave)
+
+        for nuevo_estado, direccion in self.generar_movimientos(estado):
+            nuevo_estado_clave = (
+                nuevo_estado["jugador"],
+                frozenset(nuevo_estado["cajas"]),
+            )
+
+            # Si el estado no ha sido visitado en este nivel de profundidad
+            if nuevo_estado_clave not in visited:
+                resultado = self.profundidad_limitada(
+                    nuevo_estado, camino + direccion, limite - 1, visited
+                )
+                if resultado is not None:
+                    return resultado
+
+        return None
+
     def resolver(self):
         """
-        Ejecuta la búsqueda en amplitud para encontrar la solución.
+        Ejecuta la búsqueda en profundidad iterativa para encontrar la solución.
         """
-        while self.queue:
-            estado_actual, camino = self.queue.popleft()
+        limite = 0  # Empieza con profundidad 0
+        while True:
+            # Utiliza búsqueda en profundidad hasta el límite actual
+            visited = set()  # Reinicia el conjunto de visitados en cada iteración
+            resultado = self.profundidad_limitada(
+                self.estado_inicial, "", limite, visited
+            )
 
-            print(camino)  # Imprimir el camino recorrido
+            # Si encuentra la solución, la devuelve
+            if resultado is not None:
+                return resultado
 
-            # Verificar si hemos alcanzado el objetivo
-            if self.es_estado_objetivo(estado_actual):
-                return camino  # Devuelve el camino en LURD si encontró una solución
-
-            # Generar nuevos estados (movimientos válidos)
-            for nuevo_estado, direccion in self.generar_movimientos(estado_actual):
-                estado_clave = (
-                    nuevo_estado["jugador"],
-                    frozenset(nuevo_estado["cajas"]),
-                )
-
-                # Si el estado no ha sido visitado, agrégalo a la cola y a los visitados
-                if estado_clave not in self.visited:
-                    self.visited.add(estado_clave)
-                    self.queue.append(
-                        (nuevo_estado, camino + direccion)
-                    )  # Añadir la dirección al camino
-
-        return None  # Si no se encuentra solución, devuelve None
+            # Aumenta el límite y sigue buscando
+            limite += 1

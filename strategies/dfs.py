@@ -2,12 +2,12 @@ from collections import deque
 from strategies.strategy import Strategy
 
 
-class BFSStrategy(Strategy):
+class DFSStrategy(Strategy):
     def __init__(self, mapa):
         # Estado inicial del juego: posiciones del jugador y cajas
         self.estado_inicial = super().mapa_a_estado(mapa)
-        # Cola para la búsqueda en amplitud, incluye el camino recorrido
-        self.queue = deque(
+        # Pila para la búsqueda en profundidad, incluye el camino recorrido
+        self.stack = deque(
             [(self.estado_inicial, "")]
         )  # Empareja el estado con el camino inicial vacío
         # Conjunto para mantener los estados visitados
@@ -77,10 +77,10 @@ class BFSStrategy(Strategy):
 
     def resolver(self):
         """
-        Ejecuta la búsqueda en amplitud para encontrar la solución.
+        Ejecuta la búsqueda en profundidad para encontrar la solución.
         """
-        while self.queue:
-            estado_actual, camino = self.queue.popleft()
+        while self.stack:
+            estado_actual, camino = self.stack.pop()
 
             print(camino)  # Imprimir el camino recorrido
 
@@ -95,10 +95,10 @@ class BFSStrategy(Strategy):
                     frozenset(nuevo_estado["cajas"]),
                 )
 
-                # Si el estado no ha sido visitado, agrégalo a la cola y a los visitados
+                # Si el estado no ha sido visitado, agrégalo a la pila y a los visitados
                 if estado_clave not in self.visited:
                     self.visited.add(estado_clave)
-                    self.queue.append(
+                    self.stack.append(
                         (nuevo_estado, camino + direccion)
                     )  # Añadir la dirección al camino
 
