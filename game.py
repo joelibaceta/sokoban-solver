@@ -29,7 +29,7 @@ class Game:
         for movimiento in solucion:
             self.movePlayer(movimiento)
             self.draw()
-            pygame.time.wait(200)
+            pygame.time.wait(100)
 
     def draw(self):
         # Cargar imagenes de los elementos
