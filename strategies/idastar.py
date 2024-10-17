@@ -3,6 +3,19 @@ from collections import deque
 from strategies.strategy import Strategy
 
 class IDAStarStrategy(Strategy):
+    """
+    ## IDA*
+
+    - **Objetivo:** IDA* busca reducir la memoria requerida por A* mediante un enfoque de profundidad iterativa en el que usa límites de costo en lugar de mantener una cola de prioridad.
+	- **Método:** IDA* expande los nodos utilizando f(n) = g(n) + h(n) similar a A*, pero limita la profundidad (o el costo) que puede explorar en cada iteración. Si no encuentra la solución, aumenta el límite y reintenta.
+	- **Optimalidad:** Como A*, si la heurística es admisible, IDA* garantiza una solución óptima.
+	- **Ventaja:** Utiliza mucho menos memoria que A*, ya que solo mantiene los nodos en la pila de llamadas actual, liberando aquellos que ya no son necesarios.
+	- **Desventaja:** Al tener que realizar varias iteraciones, revisita nodos repetidamente y puede ser más lento en problemas grandes. Sin embargo, es ideal para situaciones con limitaciones de memoria.
+    """
+
+    def __init__(self, mapa):
+        super().__init__(mapa)
+        self.tiempo_limite = 60  # Tiempo máximo en segundos
 
     def heuristica(self, estado):
         """
@@ -14,10 +27,14 @@ class IDAStarStrategy(Strategy):
             total_distancia += min(distancias)
         return total_distancia
 
-    def profundidad_limitada(self, estado, camino, g_cost, limite, visitados):
+    def profundidad_limitada(self, estado, camino, g_cost, limite, visitados, inicio):
         """
         Realiza búsqueda en profundidad limitada al costo.
         """
+        # Verificar el tiempo límite
+        if time.time() - inicio > self.tiempo_limite:
+            return "timeout"
+        
         f_cost = g_cost + self.heuristica(estado)
         
         # Si el costo f(n) excede el límite, devolvemos el costo como límite siguiente
@@ -41,7 +58,7 @@ class IDAStarStrategy(Strategy):
             # Si el estado no ha sido visitado en este camino
             if nuevo_estado_clave not in visitados:
                 self.nodos_abiertos += 1  # Incrementar nodos abiertos
-                resultado = self.profundidad_limitada(nuevo_estado, camino + direccion, g_cost + 1, limite, visitados)
+                resultado = self.profundidad_limitada(nuevo_estado, camino + direccion, g_cost + 1, limite, visitados, inicio)
                 
                 # Si devuelve un camino (solución), lo propagamos hacia arriba
                 if isinstance(resultado, str):
@@ -65,17 +82,23 @@ class IDAStarStrategy(Strategy):
         
         while True:
             visitados = set()  # Reiniciar el conjunto de visitados para cada límite
-            resultado = self.profundidad_limitada(self.estado_inicial, "", 0, limite, visitados)
+            resultado = self.profundidad_limitada(self.estado_inicial, "", 0, limite, visitados, inicio)
             
             # Si se encuentra un camino (solución), se devuelve
             if isinstance(resultado, str):
+                if resultado == "timeout":
+                    print("Tiempo límite alcanzado, deteniendo la búsqueda.")
+                    return super().preparar_respuesta(None)
+
                 fin = time.time()
-                tiempo_total = fin - inicio
-                print(f"Solución encontrada en {tiempo_total:.2f} segundos")
+                self.tiempo_total = fin - inicio
+                print(f"Solución encontrada en {self.tiempo_total:.2f} segundos")
                 return super().preparar_respuesta(resultado)
             
             # Si no, actualiza el límite al mínimo valor f(n) que excedió el límite anterior
-            if resultado == float('inf'):
+            if resultado == float('inf'):  # No hay solución
+                fin = time.time()
+                self.tiempo_total = fin - inicio
                 return super().preparar_respuesta(None)
             
             limite = resultado  # Actualiza el límite

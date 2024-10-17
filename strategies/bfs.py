@@ -3,6 +3,16 @@ from collections import deque
 from strategies.strategy import Strategy
 
 class BFSStrategy(Strategy):
+    """
+    ## Búsqueda en Amplitud (BFS)
+
+    - **Objetivo:** BFS es un algoritmo de búsqueda no informada que expande nodos en función de su distancia al nodo inicial, buscando niveles completos antes de avanzar al siguiente.
+	- **Método:** Explora todos los nodos a una cierta distancia del inicial antes de profundizar más. Utiliza una cola para manejar los nodos a expandir.
+	- **Optimalidad:** BFS garantiza la solución más corta en problemas no ponderados (es decir, donde cada paso tiene el mismo costo).
+	- **Ventaja:** Encuentra la solución más corta en términos de número de pasos y es relativamente simple de implementar.
+	- **Desventaja:** Consume mucha memoria, ya que debe almacenar todos los nodos de cada nivel antes de pasar al siguiente, lo que puede ser ineficiente en problemas de gran escala.
+    """
+
     def __init__(self, mapa):
         super().__init__(mapa)
         # Cola para la búsqueda en amplitud, incluye el camino recorrido y la profundidad
@@ -30,8 +40,8 @@ class BFSStrategy(Strategy):
             # Verificar si hemos alcanzado el objetivo
             if self.es_estado_objetivo(estado_actual):
                 fin = time.time()
-                tiempo_total = fin - inicio
-                print(f"Solución encontrada en {tiempo_total:.2f} segundos")
+                self.tiempo_total = fin - inicio
+                print(f"Solución encontrada en {self.tiempo_total:.2f} segundos")
                 return super().preparar_respuesta(camino)
 
             # Generar nuevos estados (movimientos válidos)
@@ -46,5 +56,5 @@ class BFSStrategy(Strategy):
 
         # Si no se encuentra solución
         fin = time.time()
-        tiempo_total = fin - inicio
+        self.tiempo_total = fin - inicio
         return super().preparar_respuesta(None)

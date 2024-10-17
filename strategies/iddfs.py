@@ -3,6 +3,15 @@ from collections import deque
 from strategies.strategy import Strategy
 
 class IDDFSStrategy(Strategy):
+    """
+    ## Búsqueda en Profundidad Iterativa (IDDFS)
+
+    - **Objetivo:** IDDFS combina la profundidad limitada de DFS con la búsqueda completa de BFS, evitando la acumulación de nodos que se da en BFS.
+	- **Método:** Realiza una búsqueda en profundidad hasta un límite determinado. Si no encuentra la solución, aumenta el límite y repite, volviendo a explorar desde el nodo inicial. Es una combinación de DFS y BFS, ya que actúa como DFS en cada iteración, pero explora niveles de manera similar a BFS al incrementar el límite.
+	- **Optimalidad:** Al igual que BFS, garantiza la solución más corta en términos de pasos en problemas no ponderados.
+	- **Ventaja:** Consume mucha menos memoria que BFS, ya que solo mantiene los nodos actuales en la pila.
+	- **Desventaja:** Requiere revisitar muchos nodos a medida que incrementa el límite, lo que puede hacerlo más lento que BFS en algunos casos.
+    """
 
     def profundidad_limitada(self, estado, camino, limite, visitados):
         """
@@ -57,7 +66,7 @@ class IDDFSStrategy(Strategy):
             # Si encuentra la solución, imprime y retorna el resultado
             if resultado is not None:
                 fin = time.time()
-                tiempo_total = fin - inicio
+                self.tiempo_total = fin - inicio
                 return super().preparar_respuesta(resultado)
 
             # Aumenta el límite y sigue buscando

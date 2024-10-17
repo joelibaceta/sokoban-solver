@@ -12,6 +12,7 @@ class Strategy():
         self.nodos_abiertos = 0
         self.nodos_cerrados = 0
         self.profundidad_maxima = 0
+        self.tiempo_total = 0
     
     def resolver(estado_inicial):
         pass
@@ -82,6 +83,7 @@ class Strategy():
             "nodos_abiertos": self.nodos_abiertos,
             "nodos_cerrados": self.nodos_cerrados,
             "profundidad_maxima": self.profundidad_maxima,
+            "tiempo_total": self.tiempo_total,
         }
 
     def mapa_a_estados(self, mapa):
