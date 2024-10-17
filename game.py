@@ -24,8 +24,8 @@ class Game:
         return self.level_data
     
     def autoplay(self):
-        bfs = IDDFSStrategy(self.level_data)
-        solucion = bfs.resolver()
+        bfs = AStarStrategy(self.level_data)
+        solucion = bfs.resolver()["camino"]
         for movimiento in solucion:
             self.movePlayer(movimiento)
             self.draw()

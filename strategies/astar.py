@@ -1,18 +1,9 @@
-from collections import deque
+import time
 import heapq
+from collections import deque
 from strategies.strategy import Strategy
 
-
 class AStarStrategy(Strategy):
-    def __init__(self, mapa):
-        # Estado inicial del juego: posiciones del jugador y cajas
-        self.estado_inicial = super().mapa_a_estado(mapa)
-
-    def es_estado_objetivo(self, estado):
-        """
-        Verifica si el estado es objetivo, es decir, si todas las cajas están en los objetivos.
-        """
-        return estado["cajas"] == estado["objetivos"]
 
     def heuristica(self, estado):
         """
@@ -27,62 +18,12 @@ class AStarStrategy(Strategy):
             total_distancia += min(distancias)
         return total_distancia
 
-    def generar_movimientos(self, estado):
-        """
-        Genera movimientos válidos para el jugador y las cajas en el estado actual.
-        """
-        movimientos = []
-        jugador_x, jugador_y = estado["jugador"]
-
-        # Movimientos posibles y sus correspondientes notaciones LURD
-        desplazamientos = {
-            "U": (0, -1),  # Arriba
-            "D": (0, 1),  # Abajo
-            "L": (-1, 0),  # Izquierda
-            "R": (1, 0),  # Derecha
-        }
-
-        for direccion, (dx, dy) in desplazamientos.items():
-            nuevo_jugador = (jugador_x + dx, jugador_y + dy)
-
-            # Verifica si el movimiento es válido (no se sale del tablero ni choca con una pared)
-            if nuevo_jugador not in estado["paredes"]:
-                # Si hay una caja en la posición, verifica si se puede empujar
-                if nuevo_jugador in estado["cajas"]:
-                    nueva_caja = (nuevo_jugador[0] + dx, nuevo_jugador[1] + dy)
-
-                    # La nueva posición de la caja debe estar vacía y no ser una pared o caja
-                    if (
-                        nueva_caja not in estado["paredes"]
-                        and nueva_caja not in estado["cajas"]
-                    ):
-                        nuevo_estado = {
-                            "jugador": nuevo_jugador,
-                            "cajas": estado["cajas"] - {nuevo_jugador} | {nueva_caja},
-                            "objetivos": estado["objetivos"],
-                            "paredes": estado["paredes"],
-                        }
-                        movimientos.append(
-                            (nuevo_estado, direccion)
-                        )  # Agregar dirección al movimiento
-                else:
-                    # Si no hay caja, simplemente mueve el jugador
-                    nuevo_estado = {
-                        "jugador": nuevo_jugador,
-                        "cajas": estado["cajas"],
-                        "objetivos": estado["objetivos"],
-                        "paredes": estado["paredes"],
-                    }
-                    movimientos.append(
-                        (nuevo_estado, direccion)
-                    )  # Agregar dirección al movimiento
-
-        return movimientos
-
     def resolver(self):
         """
         Ejecuta la búsqueda A* para encontrar la solución.
         """
+        inicio = time.time()  # Tiempo de inicio
+        
         # Inicializar la cola de prioridad
         heap = []
         
@@ -91,8 +32,7 @@ class AStarStrategy(Strategy):
         f_cost = g_cost + self.heuristica(self.estado_inicial)
         
         # Insertar el estado inicial en la cola de prioridad
-        # La tupla (f_cost, g_cost, camino, estado) evita comparar los diccionarios directamente
-        heapq.heappush(heap, (f_cost, g_cost, "", self.estado_inicial))  # (f, g, camino, estado)
+        heapq.heappush(heap, (f_cost, g_cost, 0, "", self.estado_inicial))  # (f, g, profundidad, camino, estado)
         
         # Conjunto para rastrear estados visitados
         visited = set()
@@ -100,12 +40,20 @@ class AStarStrategy(Strategy):
         
         while heap:
             # Extraer el estado con el menor f(n)
-            f_cost, g_cost, camino, estado_actual = heapq.heappop(heap)
+            f_cost, g_cost, profundidad, camino, estado_actual = heapq.heappop(heap)
+            self.nodos_cerrados += 1  # Incrementar nodos cerrados
+            
+            # Actualizar la profundidad máxima alcanzada
+            if profundidad > self.profundidad_maxima:
+                self.profundidad_maxima = profundidad
             
             # Verificar si hemos alcanzado el objetivo
             if self.es_estado_objetivo(estado_actual):
-                return camino   # Devuelve el camino en LURD si encontró una solución
-            
+                fin = time.time()
+                tiempo_total = fin - inicio
+                print(f"Solución encontrada en {tiempo_total:.2f} segundos")
+                return super().preparar_respuesta(camino)
+
             # Generar nuevos estados (movimientos válidos)
             for nuevo_estado, direccion in self.generar_movimientos(estado_actual):
                 estado_clave = (nuevo_estado['jugador'], frozenset(nuevo_estado['cajas']))
@@ -115,6 +63,10 @@ class AStarStrategy(Strategy):
                     visited.add(estado_clave)
                     nuevo_g_cost = g_cost + 1  # Cada movimiento tiene un costo de 1
                     nuevo_f_cost = nuevo_g_cost + self.heuristica(nuevo_estado)
-                    heapq.heappush(heap, (nuevo_f_cost, nuevo_g_cost, camino + direccion, nuevo_estado))
-                    
-        return None  # Si no se encuentra solución, devuelve None
+                    heapq.heappush(heap, (nuevo_f_cost, nuevo_g_cost, profundidad + 1, camino + direccion, nuevo_estado))
+                    self.nodos_abiertos += 1  # Incrementar nodos abiertos
+
+        # Si no se encuentra solución
+        fin = time.time()
+        tiempo_total = fin - inicio
+        return super().preparar_respuesta(None)
